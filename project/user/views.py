@@ -1,23 +1,15 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from .forms import UserRegisterForm
-from django.core.mail import send_mail
-from django.core.mail import EmailMultiAlternatives
-from django.template.loader import get_template
-from django.template import Context
-from django.db import connection
 from django.contrib.auth.models import User 
-from django.contrib.auth.hashers import make_password
-from django.contrib.auth.hashers import check_password
-from django.contrib.auth.hashers import PBKDF2PasswordHasher, identify_hasher, get_hasher
-# from django.contrib.auth.backends.ModelBackend import authenticate
+from django.contrib.auth.hashers import get_hasher
 
 
 def index(request):
     return render(request, 'user/index.html', {'title':'index'})
+  
   
 def register(request):
     if request.method == 'POST':
@@ -32,6 +24,7 @@ def register(request):
         form = UserRegisterForm()
     return render(request, 'user/register.html', {'form': form, 'title':'register here'})
 
+
 def generate_encoded_password(username, password):
     hasher = get_hasher()
     user_query = f"SELECT * FROM auth_user WHERE username = '{username}'"
@@ -40,6 +33,7 @@ def generate_encoded_password(username, password):
     decoded = hasher.decode(user_pass_encoded)
     input_passw_encoded = hasher.encode(password, decoded["salt"], decoded["iterations"])
     return input_passw_encoded
+
 
 def _authenticate(request, username, password, sql_safe=True):
     if sql_safe:
@@ -52,9 +46,9 @@ def _authenticate(request, username, password, sql_safe=True):
         user = None
     return user
 
+
 def Login(request):
     if request.method == 'POST':
-        # AuthenticationForm_can_also_be_used__
         username = request.POST['username']
         password = request.POST['password']
 
