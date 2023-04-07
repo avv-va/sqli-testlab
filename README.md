@@ -1,5 +1,13 @@
 ## Notes
-Ava: I followed the instructions from this [post](https://www.geeksforgeeks.org/django-sign-up-and-login-with-confirmation-email-python/). Currently, the version of the app that is secured against SQLI is coded. I will make it insecure by the end of this week. 
+Ava: I followed the instructions from this [post](https://www.geeksforgeeks.org/django-sign-up-and-login-with-confirmation-email-python/). 
+
+In `project/user/views.py` I added a `_authenticate` function which is called in the `login` function. If you set the `sql_safe` flag to be `false` you can perform a sql injection.
+
+## SQL injection example
+
+In the login form, enter this username: `ava'--` and enter any password. You should be able to log in. If the `ava` username doesn't exist, just register any username and add the `'--` when signing in. 
+
+It's currently not able to perform SQLI by adding `OR '1' = '1` which I haven't checked yet.
 
 ## How to run
 Clone the github repo and activate the virtualenv:
