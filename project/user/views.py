@@ -8,8 +8,14 @@ from django.core.mail import send_mail
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import get_template
 from django.template import Context
-  
-  
+from django.db import connection
+from django.contrib.auth.models import User 
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import PBKDF2PasswordHasher, identify_hasher, get_hasher
+# from django.contrib.auth.backends.ModelBackend import authenticate
+
+
 def index(request):
     return render(request, 'user/index.html', {'title':'index'})
   
@@ -18,16 +24,6 @@ def register(request):
         form = UserRegisterForm(request.POST)
         if form.is_valid():
             form.save()
-            # username = form.cleaned_data.get('username')
-            # email = form.cleaned_data.get('email')
-            # htmly = get_template('user/Email.html')
-            # d = { 'username': username }
-            # subject, from_email, to = 'welcome', 'your_email@gmail.com', email
-            # html_content = htmly.render(d)
-            # msg = EmailMultiAlternatives(subject, html_content, from_email, [to])
-            # msg.attach_alternative(html_content, "text/html")
-            # msg.send()
-            ##################################################################
             messages.success(request, f'Your account has been created ! You are now able to log in')
             return redirect('login')
         else:
@@ -35,20 +31,40 @@ def register(request):
     else:
         form = UserRegisterForm()
     return render(request, 'user/register.html', {'form': form, 'title':'register here'})
-  
+
+def generate_encoded_password(username, password):
+    hasher = get_hasher()
+    user_query = f"SELECT * FROM auth_user WHERE username = '{username}'"
+    user = User.objects.raw(user_query)[0]
+    user_pass_encoded = user.password
+    decoded = hasher.decode(user_pass_encoded)
+    input_passw_encoded = hasher.encode(password, decoded["salt"], decoded["iterations"])
+    return input_passw_encoded
+
+def _authenticate(request, username, password, sql_safe=True):
+    if sql_safe:
+        return authenticate(request, username = username, password = password)
+    try:
+        input_password_encoded = generate_encoded_password(username, password)
+        auth_query = f"SELECT * FROM auth_user WHERE username = '{username}' AND password = '{input_password_encoded}'"
+        user = User.objects.raw(auth_query)[0]
+    except:
+        user = None
+    return user
+
 def Login(request):
     if request.method == 'POST':
-  
         # AuthenticationForm_can_also_be_used__
-  
         username = request.POST['username']
         password = request.POST['password']
-        user = authenticate(request, username = username, password = password)
+
+        user = _authenticate(request, username, password, sql_safe=False)
+
         if user is not None:
             form = login(request, user)
             messages.success(request, f' welcome {username} !!')
             return redirect('index')
         else:
-            messages.info(request, f'Account do not exist or password is wrong')
+            messages.info(request, f'Account does not exist or password is wrong')
     form = AuthenticationForm()
     return render(request, 'user/login.html', {'form':form, 'title':'log in'})
